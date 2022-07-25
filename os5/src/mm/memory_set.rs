@@ -162,18 +162,25 @@ impl MemorySet {
     }
     // 使用elf构建应用地址空间
     pub fn from_elf(elf_data: &[u8]) -> (Self, usize, usize) {
+        // 为应用新建一个地址空间
         let mut memory_set = Self::new_bare();
-        // map trampoline
+        // 压入跳板
         memory_set.map_trampoline();
-        // map program headers of elf, with U flag
+
+        // 解析elf
         let elf = xmas_elf::ElfFile::new(elf_data).unwrap();
         let elf_header = elf.header;
         let magic = elf_header.pt1.magic;
         assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "invalid elf!");
+
+        // 获得程序头计数，程序头中包含elf期望如何构建应用的地址空间
         let ph_count = elf_header.pt2.ph_count();
         let mut max_end_vpn = VirtPageNum(0);
+
+        // 遍历程序头
         for i in 0..ph_count {
             let ph = elf.program_header(i).unwrap();
+            // 如果是描述逻辑段的程序头，则构建逻辑段并压入
             if ph.get_type().unwrap() == xmas_elf::program::Type::Load {
                 let start_va: VirtAddr = (ph.virtual_addr() as usize).into();
                 let end_va: VirtAddr = ((ph.virtual_addr() + ph.mem_size()) as usize).into();
@@ -196,12 +203,13 @@ impl MemorySet {
                 );
             }
         }
-        // map user stack with U flags
+        // 划一个用户栈
         let max_end_va: VirtAddr = max_end_vpn.into();
         let mut user_stack_bottom: usize = max_end_va.into();
-        // guard page
+        // 添加栈之间的空隙
         user_stack_bottom += PAGE_SIZE;
         let user_stack_top = user_stack_bottom + USER_STACK_SIZE;
+        // 压入用户栈
         memory_set.push(
             MapArea::new(
                 user_stack_bottom.into(),
@@ -211,7 +219,7 @@ impl MemorySet {
             ),
             None,
         );
-        // map TrapContext
+        // 压入Trap上下文
         memory_set.push(
             MapArea::new(
                 TRAP_CONTEXT.into(),
@@ -221,6 +229,8 @@ impl MemorySet {
             ),
             None,
         );
+        // 返回结果，memory_set可以得到用户地址空间token，返回里面还包含栈顶和进程入口点
+        // 这些信息就可以拿去构建初始的挂起快照了
         (
             memory_set,
             user_stack_top,
