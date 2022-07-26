@@ -48,6 +48,7 @@ lazy_static! {
 // 开始运行任务，被main函数最后调用，开始进入用户态
 pub fn run_tasks() {
     // 死循环，循环等待任务，任务现在是靠的shell发起系统调用传入的
+    // 这个循环也被称为空闲上下文，任务让出cpu的时候就会回到这个循环，重新去调度器取新的进程
     loop {
         // 获取处理器修改能力
         let mut processor = PROCESSOR.exclusive_access();
