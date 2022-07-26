@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use lazy_static::*;
 
+// 获取应用数量
 pub fn get_num_app() -> usize {
     extern "C" {
         fn _num_app();
@@ -8,6 +9,7 @@ pub fn get_num_app() -> usize {
     unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
 
+// 使用ID获取应用ELF
 pub fn get_app_data(app_id: usize) -> &'static [u8] {
     extern "C" {
         fn _num_app();
@@ -25,6 +27,7 @@ pub fn get_app_data(app_id: usize) -> &'static [u8] {
 }
 
 lazy_static! {
+    // 根据ID存储的应用名
     static ref APP_NAMES: Vec<&'static str> = {
         let num_app = get_num_app();
         extern "C" {
@@ -48,13 +51,16 @@ lazy_static! {
     };
 }
 
+// 使用应用名称获取应用的ELF
 pub fn get_app_data_by_name(name: &str) -> Option<&'static [u8]> {
     let num_app = get_num_app();
+    // 遍历ID，查找名称对应上的
     (0..num_app)
         .find(|&i| APP_NAMES[i] == name)
         .map(get_app_data)
 }
 
+// 列出所有应用名称
 pub fn list_apps() {
     println!("/**** APPS ****");
     for app in APP_NAMES.iter() {
