@@ -50,9 +50,12 @@ pub fn sys_fork() -> isize {
     let new_task = current_task.fork();
     // 获取pid值
     let new_pid = new_task.pid.0;
-    // 获取trap上下文
+    // 获取新进程trap上下文
     let trap_cx = new_task.inner_exclusive_access().get_trap_cx();
-    // 子进程fork返回0
+    // 修改子进程的寄存器，子进程fork返回0
+    // 这样从内核态返回用户态后，父进程和子进程虽然是两个几乎一模一样的平行空间
+    // 但是我们可以在用户态的程序里对fork的返回值做判断而执行不同分支，
+    // 这样父进程和子进程就可以利用这一点细小的差别走上不相同的道路了
     trap_cx.x[10] = 0;
     // 压入调度器等待调度
     add_task(new_task);
@@ -150,9 +153,17 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     -1
 }
 
-//
+
 // YOUR JOB: 实现 sys_spawn 系统调用
 // ALERT: 注意在实现 SPAWN 时不需要复制父进程地址空间，SPAWN != FORK + EXEC 
 pub fn sys_spawn(_path: *const u8) -> isize {
-    -1
+    let token = current_user_token();
+    let path = translated_str(token, path);
+    if let Some(data) = get_app_data_by_name(path.as_str()) {
+        let new_task = TaskControlBlock::new(data);
+        add_task(new_task);
+        new_task.pid.0
+    } else {
+        -1
+    }
 }
