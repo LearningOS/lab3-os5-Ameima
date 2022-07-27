@@ -160,9 +160,16 @@ pub fn sys_spawn(_path: *const u8) -> isize {
     let token = current_user_token();
     let path = translated_str(token, path);
     if let Some(data) = get_app_data_by_name(path.as_str()) {
-        let new_task = TaskControlBlock::new(data);
+        let new_task = Arc::new(TaskControlBlock::new(data));
+        let mut new_inner = new_task.inner_exclusive_access();
+        let parent = current_task().unwrap();
+        let mut parent_inner = parent.inner_exclusive_access();
+        new_inner.parent = Some(Arc::downgrade(&parent));
+        parent_inner.children.push(new_task.clone());
+        drop(new_inner);
+        drop(parent_inner);
         add_task(new_task);
-        new_task.pid.0
+        new_task.pid.0 as isize
     } else {
         -1
     }

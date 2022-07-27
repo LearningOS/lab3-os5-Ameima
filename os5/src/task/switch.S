@@ -1,3 +1,5 @@
+
+
 # 允许rept使用宏
 .altmacro
 
