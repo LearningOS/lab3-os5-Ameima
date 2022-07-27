@@ -1,9 +1,11 @@
+    // 入口点，text段，设置内核栈指针，跳转至rust入口
     .section .text.entry
     .globl _start
 _start:
     la sp, boot_stack_top
     call rust_main
 
+    // 在bss上划定栈
     .section .bss.stack
     .globl boot_stack
 boot_stack:
