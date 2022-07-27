@@ -277,6 +277,45 @@ impl MemorySet {
         //*self = Self::new_bare();
         self.areas.clear();
     }
+    // 为分配内存的系统调用提供支持
+    pub fn mmap(&mut self, start: usize, len: usize, port: usize) -> isize {
+        if (port & !0b0000_0111 != 0) || (port & 0b0000_0111 == 0) { return -1; }
+        let va_start = VirtAddr::from(start);
+        let va_end = VirtAddr::from(start + len);
+        if va_start.page_offset() != 0 { return -1; }
+        let mut map_perm = MapPermission::U;
+        if port & 0b0000_0001 == 0b0000_0001 {
+            map_perm |= MapPermission::R;
+        }
+        if port & 0b0000_0010 == 0b0000_0010 {
+            map_perm |= MapPermission::W;
+        }
+        if port & 0b0000_0100 == 0b0000_0100 {
+            map_perm |= MapPermission::X;
+        }
+        let map_area = MapArea::new(va_start, va_end, MapType::Framed, map_perm);
+        if VirtAddr::from(len).ceil() > VirtPageNum(frame_remain_num()) { return -1; }
+        for vpn in map_area.vpn_range {
+            if let Some(pte) = self.page_table.find_pte(vpn) { 
+                if pte.is_valid() {
+                    return -1; 
+                }
+            }
+        }
+        self.push(map_area, None);
+        0
+    }
+    // 为释放内存的系统调用提供支持
+    pub fn munmap(&mut self, start: usize, len: usize) -> isize {
+        for map_area in self.areas.iter_mut() {
+            if VirtAddr::from(map_area.vpn_range.get_start()) == VirtAddr::from(start) &&
+            VirtAddr::from(map_area.vpn_range.get_end()) == VirtAddr::from(start + len) {
+                map_area.unmap(&mut self.page_table);
+                return 0;
+            }
+        }
+        -1
+    }
 }
 
 // 逻辑段结构体

@@ -23,6 +23,7 @@ use process::*;
 
 // 系统调用分发
 pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
+    current_task().inner_exclusive_access().task_syscall_times[syscall_id] += 1;
     match syscall_id {
         SYSCALL_READ => sys_read(args[0], args[1] as *const u8, args[2]),
         SYSCALL_WRITE => sys_write(args[0], args[1] as *const u8, args[2]),

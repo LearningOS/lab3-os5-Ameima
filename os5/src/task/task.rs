@@ -38,6 +38,14 @@ pub struct TaskControlBlockInner {
     pub children: Vec<Arc<TaskControlBlock>>,
     // 退出码，发生错误或运行结束时设置
     pub exit_code: i32,
+    // 各种系统调用的次数
+    pub task_syscall_times: [u32; MAX_SYSCALL_NUM],
+    // 任务第一次被调度的时刻
+    pub task_first_running_time: Option<usize>,
+    // 新增，该进程当前已经运行的“长度”
+    pub task_pass: usize,
+    // 新增，进程的优先级
+    pub task_priority: usize,
 }
 
 // 访问可变部分字段的方法
@@ -62,6 +70,12 @@ impl TaskControlBlockInner {
     // 是否是僵尸进程
     pub fn is_zombie(&self) -> bool {
         self.get_status() == TaskStatus::Zombie
+    }
+    // 设置优先级
+    pub fn set_task_priority(&self, prio: isize) -> isize {
+        if prio < 2 { return -1; }
+        self.exclusive_access().task_priority = prio;
+        prio
     }
 }
 
@@ -104,6 +118,10 @@ impl TaskControlBlock {
                     parent: None, // 直接创建，没有父进程
                     children: Vec::new(), // 子进程为空
                     exit_code: 0, // 退出码初始为0
+                    task_syscall_times: [0; MAX_SYSCALL_NUM], // 各种系统调用的次数
+                    task_first_running_time: None, // 任务第一次被调度的时刻
+                    task_pass: 0, // 运行长度
+                    task_priority: 16, // 优先级
                 })
             },
         };
@@ -134,6 +152,8 @@ impl TaskControlBlock {
         let mut inner = self.inner_exclusive_access();
         // 替换地址空间
         inner.memory_set = memory_set;
+        // 替换优先级
+        inner.task_priority = 16;
         // 替换Trap物理页帧号
         inner.trap_cx_ppn = trap_cx_ppn;
         // 构建Trap上下文
@@ -176,6 +196,10 @@ impl TaskControlBlock {
                     parent: Some(Arc::downgrade(self)),
                     children: Vec::new(),
                     exit_code: 0,
+                    task_syscall_times: parent_inner.task_syscall_times, // 各种系统调用的次数
+                    task_first_running_time: parent_inner.task_first_running_time, // 任务第一次被调度的时刻
+                    task_pass: parent_inner.task_pass, // 运行长度
+                    task_priority: parent_inner.task_priority, // 优先级
                 })
             },
         });

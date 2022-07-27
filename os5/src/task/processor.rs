@@ -30,11 +30,11 @@ impl Processor {
     fn get_idle_task_cx_ptr(&mut self) -> *mut TaskContext {
         &mut self.idle_task_cx as *mut _
     }
-    // 获取当前正运行的任务的可写控制块
+    // 获取当前正运行的任务的控制块所有权
     pub fn take_current(&mut self) -> Option<Arc<TaskControlBlock>> {
         self.current.take()
     }
-    // 获取当前正运行的任务的不可写控制块
+    // 获取当前正运行的任务的控制块引用计数引用
     pub fn current(&self) -> Option<Arc<TaskControlBlock>> {
         self.current.as_ref().map(|task| Arc::clone(task))
     }
@@ -62,6 +62,10 @@ pub fn run_tasks() {
             let next_task_cx_ptr = &task_inner.task_cx as *const TaskContext;
             // 修改为运行中
             task_inner.task_status = TaskStatus::Running;
+            // 设置初次调度时间
+            task_inner.task_first_running_time == None {
+                task_inner.task_first_running_time = Some(get_time_us() / 1000);
+            }
             // 手动释放，因为后面直接就会去进程里不会回来了
             drop(task_inner);
             // 修改处理器状态
@@ -76,12 +80,12 @@ pub fn run_tasks() {
     }
 }
 
-// 接口，获取当前处理器上正在运行的任务的可写控制块
+// 接口，获取当前处理器上正在运行的任务的控制块所有权
 pub fn take_current_task() -> Option<Arc<TaskControlBlock>> {
     PROCESSOR.exclusive_access().take_current()
 }
 
-// 接口，获取当前处理器上正在运行的任务的不可写控制块
+// 接口，获取当前处理器上正在运行的任务的控制块引用计数引用
 pub fn current_task() -> Option<Arc<TaskControlBlock>> {
     PROCESSOR.exclusive_access().current()
 }

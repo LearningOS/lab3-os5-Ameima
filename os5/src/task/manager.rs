@@ -15,7 +15,7 @@ pub struct TaskManager {
 
 // YOUR JOB: FIFO->Stride
 // 采用Stride调度模型，进程按优先级对应的步长增加长度
-// 每次取用
+// 每次取用长度最短的进程
 impl TaskManager {
     // 新建调度器
     pub fn new() -> Self {
@@ -29,7 +29,16 @@ impl TaskManager {
     }
     // 从待调度队列弹出最前端的任务
     pub fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
-        self.ready_queue.pop_front()
+        let mut min_pass: usize = core::usize::MAX;
+        let mut min_pass_index: Option<usize> = None;
+        for index in 0..self.ready_queue.len() {
+            let index_pass = self.ready_queue[index].inner_exclusive_access().task_pass;
+            if index_pass <= min_pass {
+                min_pass = index_pass;
+                min_pass_index = index;
+            }
+        }
+        self.ready_queue.swap_remove_back(min_pass_index.unwrap()).unwrap()
     }
 }
 // // 采用FIFO调度模型，无优先级，循环排队调度

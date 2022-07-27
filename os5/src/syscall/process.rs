@@ -123,34 +123,48 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
 }
 
 // YOUR JOB: 引入虚地址后重写 sys_get_time
-pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
-    let _us = get_time_us();
-    // unsafe {
-    //     *ts = TimeVal {
-    //         sec: us / 1_000_000,
-    //         usec: us % 1_000_000,
-    //     };
-    // }
+pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
+    let us = get_time_us();
+    let mut ts_va = translated_refmut(current_user_token(), ts);
+    ts_va = TimeVal {
+        sec: us / 1_000_000,
+        usec: us % 1_000_000,
+    }
     0
 }
 
 // YOUR JOB: 引入虚地址后重写 sys_task_info
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
-    -1
+    let mut ti_va = translated_refmut(current_user_token(), ti);
+    let mut ctcb = current_task().inner_exclusive_access();
+    ti_va = TaskInfo {
+        status: ctcb.task_status,
+        syscall_times: ctcb.task_syscall_times,
+        time: get_time_us() / 1000 - ctcb.task_first_running_time.unwrap(),
+    }
+    0
 }
 
 // YOUR JOB: 实现sys_set_priority，为任务添加优先级
-pub fn sys_set_priority(_prio: isize) -> isize {
-    -1
+pub fn sys_set_priority(prio: isize) -> isize {
+    current_task()
+        .inner
+        .set_task_priority(prio)
 }
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
-pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
-    -1
+pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
+    current_task()
+        .inner_exclusive_access()
+        .memory_set
+        .mmap(start: usize, len: usize, port: usize)
 }
 
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    -1
+    current_task()
+        .inner_exclusive_access()
+        .memory_set
+        .munmap(start: usize, len: usize)
 }
 
 

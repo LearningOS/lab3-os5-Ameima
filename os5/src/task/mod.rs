@@ -9,6 +9,7 @@ mod switch;
 mod task;
 
 use crate::loader::get_app_data_by_name;
+use crate::config::BIG_STRIDE;
 use alloc::sync::Arc;
 use lazy_static::*;
 use manager::fetch_task;
@@ -22,7 +23,6 @@ pub use processor::{
     current_task, current_trap_cx, current_user_token, run_tasks, schedule, take_current_task,
 };
 
-
 // 挂起当前进程，运行下一个进程
 pub fn suspend_current_and_run_next() {
     // 获取当前进程的任务控制块
@@ -33,6 +33,8 @@ pub fn suspend_current_and_run_next() {
     let task_cx_ptr = &mut task_inner.task_cx as *mut TaskContext;
     // 切换到挂起状态
     task_inner.task_status = TaskStatus::Ready;
+    // 更新长度
+    task_inner.task_pass += BIG_STRIDE / task_inner.task_priority;
     // 手动释放
     drop(task_inner);
 
