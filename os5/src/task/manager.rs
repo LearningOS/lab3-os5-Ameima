@@ -14,7 +14,8 @@ pub struct TaskManager {
 }
 
 // YOUR JOB: FIFO->Stride
-// 采用FIFO调度模型，无优先级，循环排队调度
+// 采用Stride调度模型，进程按优先级对应的步长增加长度
+// 每次取用
 impl TaskManager {
     // 新建调度器
     pub fn new() -> Self {
@@ -31,6 +32,23 @@ impl TaskManager {
         self.ready_queue.pop_front()
     }
 }
+// // 采用FIFO调度模型，无优先级，循环排队调度
+// impl TaskManager {
+//     // 新建调度器
+//     pub fn new() -> Self {
+//         Self {
+//             ready_queue: VecDeque::new(),
+//         }
+//     }
+//     // 将任务压回待调度队列
+//     pub fn add(&mut self, task: Arc<TaskControlBlock>) {
+//         self.ready_queue.push_back(task);
+//     }
+//     // 从待调度队列弹出最前端的任务
+//     pub fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
+//         self.ready_queue.pop_front()
+//     }
+// }
 
 lazy_static! {
     // 初始化调度器
