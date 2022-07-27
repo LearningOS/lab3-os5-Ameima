@@ -121,7 +121,7 @@ impl PageTable {
         result
     }
     // 在表里先找到虚拟页号对应的表项的位置，没有就返回None
-    fn find_pte(&self, vpn: VirtPageNum) -> Option<&PageTableEntry> {
+    pub fn find_pte(&self, vpn: VirtPageNum) -> Option<&PageTableEntry> {
         let idxs = vpn.indexes();
         let mut ppn = self.root_ppn;
         let mut result: Option<&PageTableEntry> = None;

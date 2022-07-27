@@ -35,10 +35,10 @@ impl TaskManager {
             let index_pass = self.ready_queue[index].inner_exclusive_access().task_pass;
             if index_pass <= min_pass {
                 min_pass = index_pass;
-                min_pass_index = index;
+                min_pass_index = Some(index);
             }
         }
-        self.ready_queue.swap_remove_back(min_pass_index.unwrap()).unwrap()
+        self.ready_queue.swap_remove_back(min_pass_index.unwrap())
     }
 }
 // // 采用FIFO调度模型，无优先级，循环排队调度

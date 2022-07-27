@@ -5,6 +5,7 @@ use super::{fetch_task, TaskStatus};
 use super::{TaskContext, TaskControlBlock};
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
+use crate::timer::get_time_us;
 use alloc::sync::Arc;
 use lazy_static::*;
 
@@ -63,7 +64,7 @@ pub fn run_tasks() {
             // 修改为运行中
             task_inner.task_status = TaskStatus::Running;
             // 设置初次调度时间
-            task_inner.task_first_running_time == None {
+            if task_inner.task_first_running_time == None {
                 task_inner.task_first_running_time = Some(get_time_us() / 1000);
             }
             // 手动释放，因为后面直接就会去进程里不会回来了

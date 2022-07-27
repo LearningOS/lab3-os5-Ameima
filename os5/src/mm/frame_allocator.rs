@@ -56,6 +56,10 @@ impl StackFrameAllocator {
         self.end = r.0;
         info!("last {} Physical Frames.", self.end - self.current);
     }
+    // 剩余可用页帧数
+    pub fn remain_num(&self) -> usize {
+        self.end - self.current + self.recycled.len()
+    }
 }
 // 为栈式页帧分配器实现页帧分配器特性
 impl FrameAllocator for StackFrameAllocator {
@@ -121,6 +125,11 @@ pub fn frame_alloc() -> Option<FrameTracker> {
         .exclusive_access()
         .alloc()
         .map(FrameTracker::new)
+}
+
+// 接口，获得剩余可用页帧数
+pub fn frame_remain_num() -> usize {
+    FRAME_ALLOCATOR.exclusive_access().remain_num()
 }
 
 // 给Drop使用，回收页帧

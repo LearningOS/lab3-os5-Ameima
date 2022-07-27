@@ -2,7 +2,7 @@
 
 use super::TaskContext;
 use super::{pid_alloc, KernelStack, PidHandle};
-use crate::config::TRAP_CONTEXT;
+use crate::config::{TRAP_CONTEXT, MAX_SYSCALL_NUM};
 use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
 use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
@@ -72,9 +72,9 @@ impl TaskControlBlockInner {
         self.get_status() == TaskStatus::Zombie
     }
     // 设置优先级
-    pub fn set_task_priority(&self, prio: isize) -> isize {
+    pub fn set_task_priority(&mut self, prio: isize) -> isize {
         if prio < 2 { return -1; }
-        self.exclusive_access().task_priority = prio;
+        self.task_priority = prio as usize;
         prio
     }
 }

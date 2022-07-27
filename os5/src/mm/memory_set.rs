@@ -1,6 +1,6 @@
 // 地址空间抽象的实现，页表给cpu看和用，我们用更高层抽线的地址空间进行内存操作，在这些抽象里自动更新和维护页表的信息即可（达成同步）
 
-use super::{frame_alloc, FrameTracker};
+use super::{frame_alloc, frame_remain_num, FrameTracker};
 use super::{PTEFlags, PageTable, PageTableEntry};
 use super::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
 use super::{StepByOne, VPNRange};
